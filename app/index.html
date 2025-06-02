@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8">
+    <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <title>Монитор 42</title>
+
+    <!-- Source: https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css    -->
+    <link rel="stylesheet" href="/monitor/static/bootstrap.min.css">
+
+    <!-- Source: https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css    -->
+    <link rel="stylesheet" href="/monitor/static/font-awesome.min.css">
+
+    <!-- Source: https://fonts.googleapis.com/css?family=Libre+Baskerville|Source+Sans+Pro&display=swap    -->
+    <link rel="stylesheet" href="/monitor/static/fonts-googleapis.css">
+
+    <link rel="stylesheet" href="/monitor/static/style.css">
+
+    <link rel="icon" type="image/png" sizes="16x16" href="/monitor/static/icons/16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/monitor/static/icons/32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/monitor/static/icons/48x48.png">
+    <link rel="icon" type="image/png" sizes="72x72" href="/monitor/static/icons/72x72.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/monitor/static/icons/96x96.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="/monitor/static/icons/128x128.png">
+    <link rel="icon" type="image/png" sizes="144x144" href="/monitor/static/icons/144x144.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/monitor/static/icons/192x192.png">
+    <link rel="icon" type="image/png" sizes="256x256" href="/monitor/static/icons/256x256.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/monitor/static/icons/512x512.png">
+
+    <link rel="manifest" href="/monitor/manifest.json" />
+  </head>
+  <body>
+    <div id="custom-alert-overlay" style="display: none;"></div>
+    <div id="custom-alert">
+      <div id="alert-message" style="margin-bottom: 24px; color: #000;"></div>
+      <div style="text-align: right;">
+        <button type="button" class="btn btn-primary btn-lg" onclick="closeAlert()">ОК</button>
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-secondary" id="scrollToTopBtn">Вверх</button>
+
+    <nav class="navbar navbar-dark bg-dark sticky-top">
+      <a class="navbar-brand" href="/monitor" style="color: white; float: left; margin-left: 10px;">Монитор 42</a>
+      <a class="navbar-brand" href="/monitor" style="float: center;"><img src="/monitor/static/logo.png"></a>
+      <button type="button" class="btn btn-danger"
+              onclick="relocate_donate()" style="float: right;">Поддержать проект</button>
+    </nav>
+
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+
+    <div class="input-container">
+      <label for="keywords">Мониторинг документов о вырубке и застройке</label>
+      <input type="text" id="keywords" maxlength="200"
+        placeholder="Нижегородский, Рождественская, 52:00:0000000:0042" class="full-width-input"/>
+      <small>Вводите ключевые слова через запятую. Максимум - 10 слов, 200 символов.</small>
+    </div>
+
+    <div class="toggle-wrapper" style="text-align: center">
+      <div class="toggle" id="toggleSwitch"></div>
+    </div>
+
+    <br>
+    <br>
+    <br>
+
+    <div id="new_documents" class="container mt-4">
+      <div class="d-flex justify-content-end mb-2">
+        <button id="clear_button" type="button" class="btn btn-secondary"
+                onclick="clearDocuments()" style="display: none;">
+          Очистить список
+        </button>
+      </div>
+      <div id="documents_list"></div>
+    </div>
+
+    <br>
+    
+    <div class="email-subscription-wrapper">
+      <div class="email-checkbox-form-container">
+        <input type="checkbox" id="emailSubscriptionCheckbox">
+        <label for="emailSubscriptionCheckbox" style="margin: 0;">Отправлять уведомления на электронную почту</label>
+      </div>
+      
+      <div class="email-input-container" id="emailSubscriptionForm" style="display: none;">
+        <input type="email" id="emailInput" placeholder="my@email.ru">
+        <button id="createSubscriptionButton" type="button" class="btn btn-primary">Создать подписку</button>
+        <button id="cancelSubscriptionButton" type="button" class="btn btn-outline-primary" style="display: none;">
+          Отменить подписку
+        </button>        
+      </div>
+    </div>
+
+    <br>
+
+    <footer class="footer">
+      <p>&copy;<a href="https://dront.ru/project/42pravo/"> "42 - я имею право!"</a></p>
+    </footer>
+  </body>
+  <script src="/monitor/static/utils.js"></script>
+  <script src="/monitor/static/doc.js"></script>
+  <script src="/monitor/static/app.js" defer></script>
+  <script>
+    function customAlert(message, options = {}) {
+      const alertMessage = document.getElementById('alert-message')
+      if (options.isHTML) {
+        alertMessage.innerHTML = message;
+      } else {
+        alertMessage.innerText = message;
+      }
+      document.getElementById('custom-alert').style.display = 'block';
+      document.getElementById('custom-alert-overlay').style.display = 'block';
+    }
+
+    function closeAlert() {
+      document.getElementById('custom-alert').style.display = 'none';
+      document.getElementById('custom-alert-overlay').style.display = 'none';
+    }
+
+    document.addEventListener("click", function () {
+      if (!navigator.onLine) {
+        customAlert("Проверьте интернет соединение");
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+    });
+
+    window.onload = function() {
+      if (screen.width < 500) {
+        var metaViewport = document.getElementById('viewport');
+        metaViewport.setAttribute('content', 'user-scalable=no,width=500');
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      if (code === "success") {
+        customAlert("Успешно!");
+      } else if (code === "error") {
+        customAlert("Ошибка! Попробуйте через 10 минут.");
+      }
+    };
+
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+
+    window.onscroll = function() {
+      if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+          scrollToTopBtn.classList.add('show');
+      } else {
+          scrollToTopBtn.classList.remove('show');
+      }
+    };
+
+    scrollToTopBtn.onclick = function() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    function relocate_donate()
+    {
+      if (navigator.onLine) { location.href = "https://dront.ru/campaign/monitor42/"; }
+    }
+
+    function relocate_main()
+    {
+      if (navigator.onLine) { location.href = "/"; }
+    }
+
+    function clearDocuments() {
+      const container = document.getElementById('documents_list');
+      const clearButton = document.getElementById('clear_button');
+      container.innerHTML = '';
+      clearButton.style.display = 'none';
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/monitor/sw.js").then(
+        (registration) => {
+          console.log("Service worker registration successful:", registration);
+        },
+        (error) => {
+          console.error(`Service worker registration failed: ${error}`);
+        },
+      );
+    } else {
+      console.error("Service workers are not supported.");
+    }
+
+    function getDistributionText(id) {
+      return document.getElementById(id)?.textContent;
+    }
+
+
+    function copyText(id) {
+      let text = getDistributionText(id);
+      if (text) {
+        navigator.clipboard.writeText(text)
+      }
+    }
+
+    function shareVK(id) {
+      const isSmartphone = /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+
+      if (isSmartphone) {
+        let text = document.getElementById(id)?.textContent;
+        window.open(`https://vk.com/share.php?url=${encodeURIComponent(text)}`, '_blank');
+      } else {
+        copyText(id)
+        const url = 'https://42pravo.ru/monitor'
+        const image = 'https://42pravo.ru/monitor/static/logo.png'
+        const title = encodeURIComponent('Монитор 42');
+        window.open(`https://vk.com/share.php?url=${url}&image=${image}&title=${title}`, '_blank');
+      }
+    }
+
+    function shareTelegram(id) {
+      let text = document.getElementById(id)?.textContent;
+      if (text) {
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(text)}`, '_blank');
+      }
+    }
+  </script>
+</html>
+
